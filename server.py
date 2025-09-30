@@ -2,10 +2,12 @@ from http.server import HTTPServer, SimpleHTTPRequestHandler
 from urllib import parse
 import json 
 import crud_alumno
+import crud_docente
 
 port = 3000
 
 crudAlumno = crud_alumno.crud_alumno()
+crudDocente = crud_docente.crud_docente()
 
 class miServidor(SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -17,6 +19,11 @@ class miServidor(SimpleHTTPRequestHandler):
             self.send_response(200)
             self.end_headers()
             self.wfile.write(json.dumps(alumnos).encode('utf-8'))
+        if self.path=="/docentes":
+            docentes = crudDocente.consultar("")
+            self.send_response(200)
+            self.end_headers()
+            self.wfile.write(json.dumps(docentes).encode('utf-8'))
     
     def do_POST(self):
         longitud = int(self.headers['Content-Length'])
@@ -24,7 +31,13 @@ class miServidor(SimpleHTTPRequestHandler):
         datos = datos.decode("utf-8")
         datos = parse.unquote(datos)
         datos = json.loads(datos)
-        resp = {"msg": crudAlumno.administrar(datos)}
+        
+        if self.path == "/alumnos":
+            resp = {"msg": crudAlumno.administrar(datos)}
+        elif self.path == "/docentes":
+            resp = {"msg": crudDocente.administrar(datos)}
+        else:
+            resp = {"msg": "Ruta no encontrada"}
         
         self.send_response(200)
         self.end_headers()
