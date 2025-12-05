@@ -6,11 +6,11 @@ db = crud_hidrofact.crud()
 
 class crud_lectura:
     def consultar_por_usuario(self, idUsuario):
-        """Obtiene todas las lecturas de un usuario específico"""
+        """Obtiene todas las lecturas de un usuario específico - Ordenadas por ID descendente (más reciente primero)"""
         sql = f"""
             SELECT * FROM lecturas 
             WHERE idUsuario={idUsuario}
-            ORDER BY fechaLectura DESC
+            ORDER BY idLectura DESC
         """
         resultado = db.consultar(sql)
         
@@ -58,8 +58,17 @@ class crud_lectura:
                 datos['lecturaActual'],
                 datos['consumoM3']
             )
+            return db.ejecutar(sql, valores)
         
         elif datos['accion'] == "modificar":
+            # Verificar si tiene factura asociada (NO SE PUEDE MODIFICAR)
+            sql_check = f"SELECT idFactura FROM facturas WHERE idLectura = {datos['idLectura']}"
+            resultado_check = db.consultar(sql_check)
+            
+            if len(resultado_check) > 0:
+                return "No se puede modificar una lectura que tiene una factura asociada. Elimine primero la factura."
+            
+            # Si no tiene factura, permitir modificación
             sql = """
                 UPDATE lecturas 
                 SET fechaLectura=%s, lecturaAnterior=%s, lecturaActual=%s, consumoM3=%s
@@ -72,9 +81,19 @@ class crud_lectura:
                 datos['consumoM3'],
                 datos['idLectura']
             )
+            
+            return db.ejecutar(sql, valores)
         
         elif datos['accion'] == "eliminar":
+            # Verificar si hay factura asociada (NO SE PUEDE ELIMINAR)
+            sql_check = f"SELECT idFactura FROM facturas WHERE idLectura = {datos['idLectura']}"
+            resultado_check = db.consultar(sql_check)
+            
+            if len(resultado_check) > 0:
+                return "No se puede eliminar una lectura que tiene una factura asociada. Elimine primero la factura."
+            
             sql = "DELETE FROM lecturas WHERE idLectura=%s"
             valores = (datos['idLectura'],)
+            return db.ejecutar(sql, valores)
         
-        return db.ejecutar(sql, valores)
+        return "Acción no reconocida"
